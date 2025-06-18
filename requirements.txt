@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+requests==2.27.1
+python-multipart
+flask==2.0.1
+opencv-python
+pytesseract
+numpy
+pillow==9.0.0
+dashscope==1.13.3
+python-dotenv==0.19.2
+langgraph>=0.0.19
+reportlab>=3.6.12

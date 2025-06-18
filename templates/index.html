@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOL Stats Analyzer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#015687',    // 英雄联盟蓝色
+                        secondary: '#A08040',  // 英雄联盟金色
+                        accent: '#F5C451',     // 英雄联盟亮金色
+                        dark: '#111111',       // 英雄联盟深色
+                        light: '#F8F9FA',      // 浅色
+                        lolDark: '#0A1428',    // 英雄联盟背景色
+                        lolRed: '#C89B3C',     // 英雄联盟强调色
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        lol: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+
+    <!-- 自定义工具类 -->
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+
+            .card-shadow {
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+            }
+
+            .btn-hover {
+                @apply transform transition-all duration-300 hover:scale-105 hover:shadow-lg;
+            }
+
+            .input-focus {
+                @apply focus:ring-2 focus:ring-secondary/50 focus:border-secondary;
+            }
+
+            .lol-border {
+                @apply border-2 border-secondary/30 rounded-lg;
+            }
+
+            .lol-card {
+                @apply bg-lolDark/80 rounded-lg shadow-lg border border-secondary/20 backdrop-blur-sm transition-all duration-300 hover:border-secondary/50;
+            }
+
+            .lol-btn {
+                @apply bg-gradient-to-r from-secondary to-accent text-dark font-bold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transform transition-all duration-300 hover:scale-[1.02] hover:brightness-110;
+            }
+
+            .lol-btn-outline {
+                @apply border-2 border-secondary text-secondary font-bold py-3 px-6 rounded-lg hover:bg-secondary/10 transform transition-all duration-300;
+            }
+
+            .lol-text-glow {
+                text-shadow: 0 0 10px rgba(160, 128, 64, 0.5), 0 0 20px rgba(160, 128, 64, 0.3);
+            }
+
+            .lol-text-gradient {
+                background-clip: text;
+                -webkit-background-clip: text;
+                color: transparent;
+                background-image: linear-gradient(to right, #A08040, #F5C451);
+            }
+
+            .lol-input {
+                @apply bg-lolDark/50 border border-secondary/30 text-light rounded-lg px-4 py-2 focus:outline-none focus:border-secondary transition-all duration-300;
+            }
+
+            .result-card {
+                @apply bg-lolDark/60 rounded-lg p-4 mb-4 border border-secondary/20 transition-all duration-300 hover:border-secondary/50 hover:shadow-lg;
+            }
+
+            .result-header {
+                @apply font-semibold text-light mb-2 flex items-center;
+            }
+
+            .result-content {
+                @apply text-gray-300 leading-relaxed whitespace-pre-wrap;
+            }
+
+            .animate-float {
+                animation: float 3s ease-in-out infinite;
+            }
+
+            .lol-upload-area {
+                @apply relative w-full h-48 border-2 border-dashed border-secondary/40 rounded-lg overflow-hidden cursor-pointer bg-lolDark/30 hover:bg-lolDark/50 transition-all duration-300;
+            }
+
+            .lol-upload-area::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: linear-gradient(135deg, rgba(160, 128, 64, 0.1) 0%, rgba(160, 128, 64, 0) 100%);
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            }
+
+            .lol-upload-area:hover::before {
+                opacity: 1;
+            }
+
+            .lol-upload-area::after {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                border: 1px solid rgba(160, 128, 64, 0);
+                transition: border-color 0.3s ease;
+            }
+
+            .lol-upload-area:hover::after {
+                border-color: rgba(160, 128, 64, 0.3);
+            }
+
+            .lol-upload-icon {
+                @apply text-secondary/60 hover:text-secondary transition-colors duration-300;
+            }
+
+            .lol-upload-text {
+                @apply text-gray-400 hover:text-gray-300 transition-colors duration-300;
+            }
+
+            .scrollbar-custom {
+                scrollbar-width: thin;
+                scrollbar-color: rgba(160, 128, 64, 0.5) rgba(10, 20, 40, 0.3);
+            }
+
+            .scrollbar-custom::-webkit-scrollbar {
+                width: 6px;
+                height: 6px;
+            }
+
+            .scrollbar-custom::-webkit-scrollbar-track {
+                background: rgba(10, 20, 40, 0.3);
+                border-radius: 3px;
+            }
+
+            .scrollbar-custom::-webkit-scrollbar-thumb {
+                background-color: rgba(160, 128, 64, 0.5);
+                border-radius: 3px;
+                border: 1px solid rgba(160, 128, 64, 0.2);
+            }
+
+            .scrollbar-custom::-webkit-scrollbar-thumb:hover {
+                background-color: rgba(160, 128, 64, 0.7);
+            }
+
+            @keyframes float {
+                0% {
+                    transform: translateY(0px);
+                }
+                50% {
+                    transform: translateY(-10px);
+                }
+                100% {
+                    transform: translateY(0px);
+                }
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-lolDark min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
+<!-- 背景装饰 - 英雄联盟风格 -->
+<div class="absolute inset-0 bg-[url('https://picsum.photos/id/1035/1920/1080')] bg-cover bg-center opacity-20 z-0"></div>
+<div class="absolute inset-0 bg-gradient-to-b from-lolDark/90 via-lolDark/80 to-lolDark z-10"></div>
+
+<!-- 主容器 -->
+<div class="w-full max-w-4xl relative z-20">
+    <!-- 装饰性顶部 -->
+    <div class="h-1 bg-gradient-to-r from-secondary to-accent rounded-t-lg"></div>
+
+    <!-- 内容容器 -->
+    <div class="lol-card p-6 md:p-8 max-h-[90vh] overflow-y-auto scrollbar-custom">
+        <!-- 头部 -->
+        <div class="text-center mb-8">
+            <div class="w-20 h-20 mx-auto mb-4 relative">
+                <div class="absolute inset-0 rounded-full bg-secondary/20 animate-float"></div>
+                <div class="absolute inset-0.5 rounded-full bg-lolDark flex items-center justify-center">
+                    <i class="fa fa-shield text-3xl text-secondary"></i>
+                </div>
+            </div>
+            <h1 class="text-[clamp(1.8rem,4vw,2.5rem)] font-bold text-light mb-2 lol-text-glow">LOL赛事选手表现评分</h1>
+            <p class="text-gray-400 max-w-2xl mx-auto">上传赛事截图，获取实时数据分析</p>
+        </div>
+
+        <!-- 内容区域 -->
+        <div class="space-y-8">
+            <!-- 文件上传区域 -->
+            <div>
+                <label for="imageInput" class="block text-sm font-medium text-gray-300 mb-2">
+                    选择赛事截图
+                </label>
+                <div class="relative">
+                    <!-- 重新设计的上传区域 -->
+                    <div class="lol-upload-area cursor-pointer" id="uploadArea">
+                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                            <div class="flex flex-col items-center justify-center p-5">
+                                <div class="w-16 h-16 rounded-full bg-lolDark/60 flex items-center justify-center mb-3">
+                                    <i class="fa fa-cloud-upload text-3xl lol-upload-icon"></i>
+                                </div>
+                                <p class="mb-2 text-sm lol-upload-text"><span
+                                        class="font-semibold text-secondary">点击上传</span> 或拖放图片</p>
+                                <p class="text-xs text-gray-500">支持 JPG, PNG, GIF 格式</p>
+                            </div>
+                        </div>
+                        <input id="imageInput" type="file" accept="image/*" class="hidden"/>
+
+                        <!-- 拖放提示 (初始隐藏) -->
+                        <div id="dropZone"
+                             class="absolute inset-0 bg-lolDark/80 border-2 border-dashed border-secondary/60 flex items-center justify-center hidden">
+                            <div class="text-center">
+                                <i class="fa fa-cloud-upload text-4xl text-secondary/60 mb-3"></i>
+                                <p class="text-gray-300">释放以上传图片</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 预览区域 (初始隐藏) -->
+                <div id="previewContainer" class="mt-6 hidden">
+                    <div class="lol-card overflow-hidden">
+                        <div class="relative h-48 overflow-hidden">
+                            <img id="imagePreview" src="#" alt="Image Preview" class="w-full h-full object-cover">
+                            <div class="absolute inset-0 bg-gradient-to-t from-lolDark/80 to-transparent"></div>
+                            <div class="absolute bottom-0 left-0 p-3">
+                                <p class="text-sm font-medium text-light">上传的截图</p>
+                            </div>
+                            <!-- 移除按钮 -->
+                            <button id="removeImage"
+                                    class="absolute top-3 right-3 bg-lolDark/60 hover:bg-lolDark/80 text-red-400 hover:text-red-300 w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-300">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 按钮 -->
+                <button id="analyzeButton" onclick="sendImage()"
+                        class="lol-btn w-full flex items-center justify-center mt-6">
+                    <i class="fa fa-search mr-2"></i>
+                    <span>分析数据</span>
+                </button>
+
+                <!-- 加载指示器 (初始隐藏) -->
+                <div id="loadingIndicator" class="mt-4 hidden flex justify-center">
+                    <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-secondary"></div>
+                </div>
+            </div>
+
+            <!-- 结果区域 -->
+            <div id="resultContainer" class="lol-card p-6 hidden">
+                <div class="mb-4 flex items-center justify-between">
+                    <h3 class="text-xl font-semibold text-light flex items-center">
+                    <i class="fa fa-line-chart text-secondary mr-2"></i>
+                    <span class="lol-text-gradient">分析结果</span>
+                </h3>
+                    <button id="downloadPdfBtn" class="lol-btn-outline text-sm py-2 px-4 flex items-center">
+                        <i class="fa fa-file-pdf-o mr-2"></i> 导出PDF
+                    </button>
+                </div>
+                <div id="result" class="max-h-[70vh] overflow-y-auto scrollbar-custom p-2">
+                    <!-- 结果内容将通过JavaScript动态添加 -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 模态框 -->
+<div id="imageModal" class="fixed inset-0 bg-lolDark/80 hidden flex items-center justify-center z-50">
+    <div class="relative max-w-4xl w-full">
+        <img id="modalImage" src="#" alt="Full Image" class="w-full">
+        <button id="closeModal"
+                class="absolute top-3 right-3 bg-lolDark/60 hover:bg-lolDark/80 text-red-400 hover:text-red-300 w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-300">
+            <i class="fa fa-times"></i>
+        </button>
+    </div>
+</div>
+
+<!-- 页脚 -->
+<div class="mt-8 text-center text-gray-500 text-sm relative z-20">
+    <p>© 2025 LOL Stats Analyzer | 提供精准的赛事数据分析</p>
+</div>
+
+<script>
+    // 文件预览功能
+    document.getElementById('imageInput').addEventListener('change', function (e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                document.getElementById('imagePreview').src = event.target.result;
+                document.getElementById('previewContainer').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // 移除图片功能
+    document.getElementById('removeImage').addEventListener('click', function () {
+        document.getElementById('imageInput').value = '';
+        document.getElementById('previewContainer').classList.add('hidden');
+    });
+
+    // 点击上传区域打开文件选择器 - 修改为点击整个上传区域
+    document.getElementById('uploadArea').addEventListener('click', function () {
+        console.log('点击事件触发'); // 添加调试信息
+        const imageInput = document.getElementById('imageInput');
+        if (imageInput) {
+            imageInput.click();
+        } else {
+            console.error('文件输入框未找到');
+        }
+    });
+
+    // 拖放功能
+    const uploadArea = document.getElementById('uploadArea');
+    const dropZone = document.getElementById('dropZone');
+    const imageInput = document.getElementById('imageInput');
+
+    // 阻止默认拖放行为
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        uploadArea.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    // 高亮显示拖放区域
+    ['dragenter', 'dragover'].forEach(eventName => {
+        uploadArea.addEventListener(eventName, highlight, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        uploadArea.addEventListener(eventName, unhighlight, false);
+    });
+
+    function highlight() {
+        dropZone.classList.remove('hidden');
+    }
+
+    function unhighlight() {
+        dropZone.classList.add('hidden');
+    }
+
+    // 处理文件拖放
+    uploadArea.addEventListener('drop', handleDrop, false);
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+
+        if (files.length > 0) {
+            document.getElementById('imageInput').files = files;
+            const file = files[0];
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                document.getElementById('imagePreview').src = event.target.result;
+                document.getElementById('previewContainer').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    // 发送图片进行分析
+    function sendImage() {
+        const fileInput = document.getElementById('imageInput');
+        const file = fileInput.files[0];
+        const analyzeButton = document.getElementById('analyzeButton');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const resultContainer = document.getElementById('resultContainer');
+        const resultDiv = document.getElementById('result');
+
+        if (!file) {
+            alert('请选择一张图片');
+            return;
+        }
+
+        // 显示加载状态
+        analyzeButton.disabled = true;
+        analyzeButton.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i><span>分析中...</span>';
+        analyzeButton.classList.remove('lol-btn');
+        analyzeButton.classList.add('lol-btn-outline');
+        loadingIndicator.classList.remove('hidden');
+        resultContainer.classList.add('hidden');
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        fetch('/analyze_image', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('网络响应异常');
+                }
+                return response.text();
+            })
+            .then(data => {
+                // 从HTML响应中提取内容区域
+                const parser = new DOMParser();
+                const htmlDoc = parser.parseFromString(data, 'text/html');
+                const analysisContainer = htmlDoc.querySelector('.analysis-container');
+                
+                if (analysisContainer) {
+                    // 将提取的内容放入结果区域
+                    resultDiv.innerHTML = '';
+                    resultDiv.appendChild(analysisContainer);
+                    
+                    // 添加必要的CSS样式
+                    const styleElement = document.createElement('style');
+                    styleElement.textContent = `
+                        .analysis-container {
+                            font-family: 'Microsoft YaHei', Arial, sans-serif;
+                            padding: 15px;
+                            color: #e0e0e0;
+                        }
+                        .team-box {
+                            background-color: #1a2a3a;
+                            color: #e0e0e0;
+                            border-radius: 10px;
+                            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+                            margin-bottom: 20px;
+                            padding: 15px;
+                            border-top: 3px solid;
+                        }
+                        .blue-team {
+                            border-color: #3498db;
+                        }
+                        .red-team {
+                            border-color: #e74c3c;
+                        }
+                        .team-header {
+                            font-size: 20px;
+                            font-weight: bold;
+                            margin-bottom: 15px;
+                            padding-bottom: 8px;
+                            border-bottom: 2px solid;
+                            display: flex;
+                            align-items: center;
+                        }
+                        .blue-header {
+                            border-color: #3498db;
+                            color: #3498db;
+                        }
+                        .red-header {
+                            border-color: #e74c3c;
+                            color: #e74c3c;
+                        }
+                        .player-card {
+                            background-color: rgba(26, 42, 58, 0.7);
+                            border-radius: 8px;
+                            padding: 15px;
+                            margin-bottom: 15px;
+                            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+                            transition: transform 0.2s;
+                        }
+                        .player-card:hover {
+                            transform: translateY(-3px);
+                        }
+                        .player-header {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            margin-bottom: 10px;
+                        }
+                        .player-name {
+                            font-size: 18px;
+                            font-weight: bold;
+                        }
+                        .player-position {
+                            background-color: #2c3e50;
+                            padding: 3px 8px;
+                            border-radius: 4px;
+                            font-size: 14px;
+                        }
+                        .player-stats {
+                            display: grid;
+                            grid-template-columns: repeat(3, 1fr);
+                            gap: 10px;
+                            margin-bottom: 10px;
+                        }
+                        .stat-item {
+                            background-color: rgba(38, 55, 71, 0.7);
+                            padding: 8px;
+                            border-radius: 6px;
+                            text-align: center;
+                        }
+                        .stat-label {
+                            font-size: 12px;
+                            color: #95a5a6;
+                            margin-bottom: 3px;
+                        }
+                        .stat-value {
+                            font-size: 16px;
+                            font-weight: bold;
+                        }
+                        .rating {
+                            color: gold;
+                            font-size: 22px;
+                            letter-spacing: 2px;
+                        }
+                        .comment {
+                            margin-top: 10px;
+                            padding: 10px;
+                            background-color: rgba(38, 55, 71, 0.7);
+                            border-radius: 6px;
+                            font-style: italic;
+                            line-height: 1.5;
+                        }
+                        .team-icon {
+                            margin-right: 10px;
+                            font-size: 20px;
+                        }
+                        .analysis-title {
+                            text-align: center;
+                            color: #e0e0e0;
+                            margin-bottom: 20px;
+                            font-size: 24px;
+                            font-weight: bold;
+                        }
+                        .gold-star {
+                            color: gold;
+                        }
+                    `;
+                    resultDiv.appendChild(styleElement);
+                } else {
+                    // 如果无法提取，则显示完整响应
+                    resultDiv.innerHTML = data;
+                }
+                
+                // 显示结果
+                resultContainer.classList.remove('hidden');
+                
+                // 平滑滚动到结果区域
+                resultContainer.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                resultDiv.innerHTML = `
+                    <div class="bg-red-900/20 border border-red-700/30 rounded-lg p-4">
+                        <div class="font-semibold text-red-400 mb-2">
+                            <i class="fa fa-exclamation-circle mr-2"></i>分析失败
+                        </div>
+                        <div class="text-red-300">${error.message}</div>
+                    </div>
+                `;
+                resultContainer.classList.remove('hidden');
+            })
+            .finally(() => {
+                // 恢复按钮状态
+                analyzeButton.disabled = false;
+                analyzeButton.innerHTML = '<i class="fa fa-search mr-2"></i><span>分析数据</span>';
+                analyzeButton.classList.remove('lol-btn-outline');
+                analyzeButton.classList.add('lol-btn');
+                loadingIndicator.classList.add('hidden');
+            });
+    }
+
+    // 添加PDF导出功能
+    document.getElementById('downloadPdfBtn').addEventListener('click', function() {
+        // 获取结果内容并提取数据
+        const resultContent = document.getElementById('result').innerHTML;
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = resultContent;
+        
+        // 解析蓝队和红队数据
+        const blueTeamData = extractTeamData(tempDiv, '.blue-team');
+        const redTeamData = extractTeamData(tempDiv, '.red-team');
+        
+        // 调试输出
+        console.log("蓝队数据:", blueTeamData);
+        console.log("红队数据:", redTeamData);
+        
+        // 创建表单数据
+        const formData = new FormData();
+        formData.append('blue_team_data', JSON.stringify(blueTeamData));
+        formData.append('red_team_data', JSON.stringify(redTeamData));
+        
+        // 显示加载提示
+        showNotification('正在生成PDF...', 'info');
+        
+        // 发送请求
+        fetch('/export_pdf', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('PDF生成失败');
+            }
+            return response.blob();
+        })
+        .then(blob => {
+            // 创建下载链接
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = 'lol_player_analysis.pdf';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            
+            // 显示成功消息
+            showNotification('PDF导出成功！', 'success');
+        })
+        .catch(error => {
+            console.error('PDF生成错误:', error);
+            // 显示错误消息
+            showNotification('PDF导出失败，请重试', 'error');
+        });
+    });
+
+    // 从DOM中提取队伍数据
+    function extractTeamData(container, teamSelector) {
+        const teamData = [];
+        const teamContainer = container.querySelector(teamSelector);
+        
+        if (!teamContainer) return teamData;
+        
+        const playerCards = teamContainer.querySelectorAll('.player-card');
+        playerCards.forEach(card => {
+            // 提取基本信息
+            const nameElement = card.querySelector('.player-name');
+            const positionElement = card.querySelector('.player-position');
+            const name = nameElement ? nameElement.textContent.trim() : '';
+            const position = positionElement ? positionElement.textContent.trim() : '';
+            
+            // 提取评分（数星号★数量）
+            const ratingElement = card.querySelector('.rating');
+            const ratingText = ratingElement ? ratingElement.textContent.trim() : '';
+            
+            // 计算星星数量 - 修正评分计算
+            let rating = 0;
+            const starCount = (ratingText.match(/★/g) || []).length;
+            if (ratingText.includes('☆')) {
+                rating = starCount + 0.5;
+            } else {
+                rating = starCount;
+            }
+            
+            // 提取统计数据
+            let kda = '', cs = '', damage = '', sight = '';
+            const statsItems = card.querySelectorAll('.stat-item');
+            statsItems.forEach(item => {
+                const label = item.querySelector('.stat-label');
+                const value = item.querySelector('.stat-value');
+                
+                if (label && value) {
+                    const labelText = label.textContent.trim();
+                    const valueText = value.textContent.trim();
+                    
+                    if (labelText.includes('KDA')) kda = valueText;
+                    else if (labelText.includes('补刀')) cs = valueText;
+                    else if (labelText.includes('伤害')) damage = valueText;
+                    else if (labelText.includes('视野')) sight = valueText;
+                }
+            });
+            
+            // 提取评语
+            const commentElement = card.querySelector('.comment-content');
+            const comment = commentElement ? commentElement.textContent.trim() : '';
+            
+            // 添加到数据数组
+            teamData.push({
+                name,
+                position,
+                rating,
+                kda,
+                cs,
+                damage,
+                sight,
+                comment
+            });
+        });
+        
+        return teamData;
+    }
+
+    // 显示通知消息
+    function showNotification(message, type = 'info') {
+        // 创建通知元素
+        const notification = document.createElement('div');
+        
+        // 设置样式
+        notification.style.position = 'fixed';
+        notification.style.bottom = '20px';
+        notification.style.right = '20px';
+        notification.style.padding = '15px 20px';
+        notification.style.borderRadius = '5px';
+        notification.style.zIndex = '9999';
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateY(20px)';
+        notification.style.transition = 'all 0.3s ease';
+        notification.style.fontFamily = 'Inter, system-ui, sans-serif';
+        notification.style.maxWidth = '300px';
+        notification.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+        
+        // 设置背景颜色和图标
+        let bgColor, icon;
+        switch(type) {
+            case 'success':
+                bgColor = 'linear-gradient(135deg, #66BB6A, #43A047)';
+                icon = '✓';
+                break;
+            case 'error':
+                bgColor = 'linear-gradient(135deg, #EF5350, #D32F2F)';
+                icon = '✗';
+                break;
+            case 'info':
+            default:
+                bgColor = 'linear-gradient(135deg, #42A5F5, #1E88E5)';
+                icon = 'ℹ';
+        }
+        
+        notification.style.background = bgColor;
+        
+        // 设置内容
+        notification.innerHTML = `
+            <div style="display: flex; align-items: center;">
+                <div style="margin-right: 10px; font-size: 18px; font-weight: bold;">${icon}</div>
+                <div style="color: white; font-weight: 500;">${message}</div>
+            </div>
+        `;
+        
+        // 添加到页面
+        document.body.appendChild(notification);
+        
+        // 触发动画
+        setTimeout(() => {
+            notification.style.opacity = '1';
+            notification.style.transform = 'translateY(0)';
+        }, 10);
+        
+        // 一段时间后移除
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                document.body.removeChild(notification);
+            }, 300);
+        }, 3000);
+    }
+</script>
+</body>
+
+</html>
